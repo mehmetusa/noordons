@@ -11,6 +11,8 @@ import {
 import { getBooks } from "@/lib/books";
 import { formatCompactNumber, formatCurrency } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const allBooks = await getBooks();
   const featuredBooks = allBooks.filter((book) => book.featured).slice(0, 4);

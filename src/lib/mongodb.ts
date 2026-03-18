@@ -37,6 +37,11 @@ export async function dbConnect() {
     });
   }
 
-  cached.conn = await cached.promise;
-  return cached.conn;
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (error) {
+    cached.promise = null;
+    throw error;
+  }
 }
