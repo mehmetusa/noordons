@@ -8,14 +8,19 @@ const footerLinks = [
   { href: "/books", label: "All books" },
   { href: "/about", label: "About Noordons" },
   { href: "/contact", label: "Contact" },
-  { href: "/books?genre=History", label: "History shelf" },
-  { href: "/books?genre=Poetry", label: "Poetry shelf" },
+];
+
+const policyLinks = [
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms of Service" },
+  { href: "/shipping", label: "Shipping Policy" },
+  { href: "/returns", label: "Returns & Refunds" },
 ];
 
 export function SiteFooter() {
   return (
     <footer className="border-t border-black/10 bg-[#1b1511] text-[#f3e8dd]">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_0.7fr_0.9fr] lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.08fr_0.7fr_0.7fr_0.9fr] lg:px-8">
         <div className="space-y-4">
           <div className="flex items-center">
             <Image
@@ -48,6 +53,17 @@ export function SiteFooter() {
         </div>
 
         <div>
+          <p className="section-kicker !text-[#d7af90]">Policies</p>
+          <div className="mt-4 flex flex-col gap-3 text-sm text-[#f3e8dd]">
+            {policyLinks.map((link) => (
+              <Link key={link.href} href={link.href} className="nav-link !text-[#f3e8dd]">
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div>
           <p className="section-kicker !text-[#d7af90]">Store notes</p>
           <div className="mt-4 space-y-3 text-sm leading-7 text-[#cdbfae]">
             <p>{siteConfig.email}</p>
@@ -60,7 +76,7 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-white/10 px-4 py-5 text-center text-xs uppercase tracking-[0.18em] text-[#cdbfae] sm:px-6 lg:px-8">
-        © 2026 noorrdons.com. All Rights Reserved.
+        © 2026 noordons.com. All Rights Reserved.
       </div>
     </footer>
   );
