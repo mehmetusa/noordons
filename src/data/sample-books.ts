@@ -1,0 +1,313 @@
+import type {
+  Book,
+  ServiceHighlight,
+  ShelfFeature,
+  StoreStat,
+} from "@/types/book";
+
+export const sampleBooks: Book[] = [
+  {
+    title: "The Paper Garden",
+    slug: "the-paper-garden",
+    author: "Elif Aydin",
+    genre: "Fiction",
+    format: "Hardcover",
+    language: "English",
+    price: 48,
+    compareAtPrice: 62,
+    rating: 4.8,
+    reviewCount: 126,
+    featured: true,
+    badge: "Staff Pick",
+    inventory: 4,
+    pages: 352,
+    publishedYear: 2025,
+    isbn: "978-1-7325904-1-7",
+    palette: ["#874d5d", "#deaf91"],
+    description:
+      "A quiet Istanbul family saga about inheritance, memory, and the rooms we keep locked.",
+    longDescription: [
+      "When architect Derya returns to settle her grandmother's apartment, she finds a private library hidden behind a paneled wall. Each book contains marginal notes that rewrite the story her family has repeated for decades.",
+      "The novel moves through kitchens, courtyards, and old ferry routes with a measured pace, building tension through detail rather than spectacle. It is intimate, atmospheric, and highly giftable.",
+    ],
+    highlights: [
+      "Foiled cloth case with deckled pages",
+      "Reading-group guide included",
+      "Dispatches within 48 hours",
+    ],
+    tags: ["Literary fiction", "Family saga", "Atmospheric"],
+  },
+  {
+    title: "Atlas of Quiet Streets",
+    slug: "atlas-of-quiet-streets",
+    author: "Mina Halberg",
+    genre: "Travel",
+    format: "Paperback",
+    language: "English",
+    price: 38,
+    rating: 4.6,
+    reviewCount: 84,
+    featured: true,
+    badge: "New Arrival",
+    inventory: 4,
+    pages: 288,
+    publishedYear: 2026,
+    isbn: "978-1-7325904-2-4",
+    palette: ["#425c70", "#9fc2cc"],
+    description:
+      "Essays, maps, and small histories from overlooked neighborhoods across Europe and the Levant.",
+    longDescription: [
+      "Part travel diary and part urban field guide, this collection drifts toward side streets, old kiosks, pocket gardens, and tea rooms that rarely make it into glossy guides.",
+      "Each chapter includes annotated routes and short recommendations for readers who prefer wandering over checklist tourism.",
+    ],
+    highlights: [
+      "Full-color endpapers",
+      "Fold-out neighborhood maps",
+      "Ideal for slow-travel readers",
+    ],
+    tags: ["Essays", "Travel writing", "City walks"],
+  },
+  {
+    title: "Midnight Typesetter",
+    slug: "midnight-typesetter",
+    author: "Noah Vesper",
+    genre: "Mystery",
+    format: "Hardcover",
+    language: "English",
+    price: 52,
+    compareAtPrice: 68,
+    rating: 4.7,
+    reviewCount: 203,
+    featured: true,
+    badge: "Bestseller",
+    inventory: 4,
+    pages: 384,
+    publishedYear: 2024,
+    isbn: "978-1-7325904-3-1",
+    palette: ["#232632", "#a47761"],
+    description:
+      "A print-shop apprentice follows misprinted proofs into a literary conspiracy after midnight.",
+    longDescription: [
+      "Set over three rain-soaked nights, Midnight Typesetter has the snap of a classic page-turner but the texture of a bookish noir. Footnotes, sample proofs, and letters are woven into the plot without slowing it down.",
+      "Readers who like sharp pacing, independent bookstores, and tactile world-building will move through this one quickly.",
+    ],
+    highlights: [
+      "Signed first-edition jackets available",
+      "Foil stamp on the spine",
+      "One of our fastest-moving thrillers",
+    ],
+    tags: ["Bookish mystery", "Noir", "Fast-paced"],
+  },
+  {
+    title: "Salt and Starlight",
+    slug: "salt-and-starlight",
+    author: "Leyla Demir",
+    genre: "Poetry",
+    format: "Paperback",
+    language: "English",
+    price: 34,
+    rating: 4.9,
+    reviewCount: 61,
+    featured: false,
+    badge: "Signed",
+    inventory: 4,
+    pages: 176,
+    publishedYear: 2025,
+    isbn: "978-1-7325904-4-8",
+    palette: ["#445b57", "#dbb180"],
+    description:
+      "A luminous poetry collection balancing sea weather, migration, and devotion.",
+    longDescription: [
+      "Demir writes in short tidal movements, returning to the same images with new pressure each time. The effect is musical without becoming precious.",
+      "This edition includes a short afterword on translation and a stitched binding that allows the poems to lie flat.",
+    ],
+    highlights: [
+      "Thread-sewn binding",
+      "Signed bookplate included",
+      "Excellent for gifting",
+    ],
+    tags: ["Poetry", "Lyrical", "Signed edition"],
+  },
+  {
+    title: "The Last Cartographer",
+    slug: "the-last-cartographer",
+    author: "Rafi Mercer",
+    genre: "History",
+    format: "Hardcover",
+    language: "English",
+    price: 58,
+    rating: 4.5,
+    reviewCount: 97,
+    featured: false,
+    inventory: 4,
+    pages: 416,
+    publishedYear: 2023,
+    isbn: "978-1-7325904-5-5",
+    palette: ["#594936", "#d2be95"],
+    description:
+      "A richly illustrated history of vanished maps, copied coastlines, and stubborn geographers.",
+    longDescription: [
+      "Mercer tracks the life of maps not as instruments of certainty but as objects full of guesswork, persuasion, and ambition. The result is a sharp history of exploration told through paper, ink, and revision.",
+      "It is especially strong on the emotional pull of maps: how they promise mastery even when they are visibly unfinished.",
+    ],
+    highlights: [
+      "Illustrated section inserts",
+      "Archival paper stock",
+      "Favorite among design readers",
+    ],
+    tags: ["History", "Illustrated", "Design adjacent"],
+  },
+  {
+    title: "House of Lanterns",
+    slug: "house-of-lanterns",
+    author: "Ariana Sloane",
+    genre: "Fiction",
+    format: "Hardcover",
+    language: "English",
+    price: 46,
+    rating: 4.4,
+    reviewCount: 142,
+    featured: false,
+    inventory: 4,
+    pages: 320,
+    publishedYear: 2024,
+    isbn: "978-1-7325904-6-2",
+    palette: ["#60453b", "#e5c389"],
+    description:
+      "An intimate winter novel set inside a family-run cinema facing one final season.",
+    longDescription: [
+      "The House of Lanterns is interested in projection rooms, neighborhood rituals, and the ways people rehearse departures long before they finally leave.",
+      "It is quieter than a broad ensemble novel and more emotionally direct than its premise first suggests.",
+    ],
+    highlights: [
+      "Printed endpaper illustration",
+      "Ideal companion for book clubs",
+      "Warm, cinematic atmosphere",
+    ],
+    tags: ["Contemporary fiction", "Family", "Cinema"],
+  },
+  {
+    title: "Margins of the Sea",
+    slug: "margins-of-the-sea",
+    author: "Daria Kolev",
+    genre: "Essays",
+    format: "Paperback",
+    language: "English",
+    price: 36,
+    rating: 4.8,
+    reviewCount: 75,
+    featured: false,
+    inventory: 4,
+    pages: 244,
+    publishedYear: 2026,
+    isbn: "978-1-7325904-7-9",
+    palette: ["#35546a", "#cf9578"],
+    description:
+      "Meditations on coastlines, labor, and the emotional afterlife of ports.",
+    longDescription: [
+      "Kolev's essays are crisp, unsentimental, and unusually attentive to the built environment. Harbors, ferries, breakwaters, and fish markets become ways of reading social change.",
+      "This is a strong match for readers who like reflective nonfiction with reporting under the surface.",
+    ],
+    highlights: [
+      "French flaps",
+      "Annotated bibliography",
+      "Staff favorite in nonfiction",
+    ],
+    tags: ["Essays", "Maritime", "Reflective"],
+  },
+  {
+    title: "The Orchard Letters",
+    slug: "the-orchard-letters",
+    author: "Simon Vale",
+    genre: "Romance",
+    format: "Paperback",
+    language: "English",
+    price: 32,
+    rating: 4.3,
+    reviewCount: 118,
+    featured: false,
+    inventory: 4,
+    pages: 304,
+    publishedYear: 2025,
+    isbn: "978-1-7325904-8-6",
+    palette: ["#736144", "#d9a66d"],
+    description:
+      "A letter-driven romance about missed seasons, inherited orchards, and learning to stay.",
+    longDescription: [
+      "Simon Vale builds this novel through years of correspondence, giving the love story a patient rhythm and a strong sense of place. The result is gentle, open-hearted, and easy to press into someone's hands.",
+      "If your customers ask for character-first romance with little noise, this title tends to land well.",
+    ],
+    highlights: [
+      "Deckled fore-edge",
+      "Pressed-flower bookmark included",
+      "Soft, character-driven romance",
+    ],
+    tags: ["Romance", "Epistolary", "Cozy"],
+  },
+];
+
+export const featuredShelves: ShelfFeature[] = [
+  {
+    eyebrow: "For long nights",
+    title: "Nightstand Fiction",
+    description:
+      "Atmospheric novels, family dramas, and quietly addictive stories with real shelf presence.",
+    href: "/books?genre=Fiction",
+    note: "Curated for readers who want mood first",
+    gradient: "linear-gradient(135deg, rgba(220,174,146,0.85), rgba(142,94,87,0.9))",
+  },
+  {
+    eyebrow: "Make notes in the margin",
+    title: "Essay and History Table",
+    description:
+      "Sharp nonfiction that feels researched, tactile, and built to survive rereading.",
+    href: "/books?genre=Essays",
+    note: "A strong mix of essays, design, and history",
+    gradient: "linear-gradient(135deg, rgba(160,191,203,0.85), rgba(66,92,112,0.95))",
+  },
+  {
+    eyebrow: "Books that travel well",
+    title: "Pocket Editions",
+    description:
+      "Slim, portable paperbacks for trains, cafes, and overpacked weekend bags.",
+    href: "/books?genre=Travel",
+    note: "Easy recommendations under $20",
+    gradient: "linear-gradient(135deg, rgba(226,190,150,0.9), rgba(93,85,71,0.92))",
+  },
+];
+
+export const storeStats: StoreStat[] = [
+  {
+    value: "08",
+    label: "signature titles",
+    copy: "A starter catalog designed for fiction, essays, history, poetry, and romance.",
+  },
+  {
+    value: "48h",
+    label: "dispatch window",
+    copy: "Fast fulfillment messaging built into the product detail experience.",
+  },
+  {
+    value: "4.7",
+    label: "average rating",
+    copy: "Social proof is surfaced in every card without overwhelming the page.",
+  },
+];
+
+export const serviceHighlights: ServiceHighlight[] = [
+  {
+    title: "Curated shelves, not endless scroll",
+    description:
+      "The storefront emphasizes editorial picks, high-context recommendations, and clear category pathways.",
+  },
+  {
+    title: "Designed for premium gifting",
+    description:
+      "Each detail page carries enough tactile information to sell special editions and collectible formats.",
+  },
+  {
+    title: "Ready for real catalog data",
+    description:
+      "The same UI reads from MongoDB once you point the app at a live database and seed the titles.",
+  },
+];
