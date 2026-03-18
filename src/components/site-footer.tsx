@@ -58,6 +58,10 @@ export function SiteFooter() {
           <SocialLinks theme="dark" className="mt-6" />
         </div>
       </div>
+
+      <div className="border-t border-white/10 px-4 py-5 text-center text-xs uppercase tracking-[0.18em] text-[#cdbfae] sm:px-6 lg:px-8">
+        © 2026 noorrdons.com. All Rights Reserved.
+      </div>
     </footer>
   );
 }
