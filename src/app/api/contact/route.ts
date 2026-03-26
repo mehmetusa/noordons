@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUser, normalizeEmail } from "@/lib/auth";
 import { dbConnect, isMongoConfigured } from "@/lib/mongodb";
+import { isEmailConfigured, sendContactEmail } from "@/lib/email";
 import { ContactMessageModel } from "@/models/ContactMessage";
 
 export const runtime = "nodejs";
@@ -22,13 +23,6 @@ function isValidEmail(value: string) {
 }
 
 export async function POST(request: Request) {
-  if (!isMongoConfigured) {
-    return NextResponse.json(
-      { message: "Contact storage is not configured yet." },
-      { status: 503 },
-    );
-  }
-
   let body: ContactRequestBody;
 
   try {
@@ -80,29 +74,76 @@ export async function POST(request: Request) {
     );
   }
 
+  const emailEnabled = isEmailConfigured();
+
+  if (!emailEnabled && !isMongoConfigured) {
+    return NextResponse.json(
+      {
+        message:
+          "Contact delivery is not configured yet. Add SMTP settings or MongoDB storage before using the form.",
+      },
+      { status: 503 },
+    );
+  }
+
+  const currentUser = await getCurrentUser();
+  let savedMessage = false;
+
+  if (isMongoConfigured) {
+    try {
+      await dbConnect();
+
+      await ContactMessageModel.create({
+        userId: currentUser?.userId,
+        name,
+        email,
+        subject,
+        message,
+      });
+
+      savedMessage = true;
+    } catch (error) {
+      console.error("Failed to store contact message.", error);
+    }
+  }
+
+  if (!emailEnabled) {
+    return NextResponse.json(
+      {
+        message: savedMessage
+          ? "Your message was saved, but inbox delivery is not configured yet. Add SMTP settings to forward messages to info@noordons.com."
+          : "Inbox delivery is not configured yet. Add SMTP settings to forward messages to info@noordons.com.",
+      },
+      { status: 503 },
+    );
+  }
+
   try {
-    await dbConnect();
-
-    const currentUser = await getCurrentUser();
-
-    await ContactMessageModel.create({
-      userId: currentUser?.userId,
+    await sendContactEmail({
       name,
       email,
       subject,
       message,
     });
-
-    return NextResponse.json(
-      { message: "Message received. The shop team will reply soon." },
-      { status: 201 },
-    );
   } catch (error) {
-    console.error("Failed to store contact message.", error);
+    console.error("Failed to send contact email.", error);
 
     return NextResponse.json(
-      { message: "Unable to send your message right now." },
-      { status: 500 },
+      {
+        message: savedMessage
+          ? "Your message was saved, but email delivery to info@noordons.com failed. Check your SMTP settings."
+          : "Unable to deliver your message email right now. Check your SMTP settings.",
+      },
+      { status: 502 },
     );
   }
+
+  return NextResponse.json(
+    {
+      message: savedMessage
+        ? "Message sent to info@noordons.com and archived in the shop inbox."
+        : "Message sent to info@noordons.com.",
+    },
+    { status: 201 },
+  );
 }

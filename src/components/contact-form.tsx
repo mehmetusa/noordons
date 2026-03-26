@@ -69,8 +69,8 @@ export function ContactForm({
       </h2>
       <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5d493d]">
         Use this form for order questions, wholesale requests, author events, or
-        book-club notes. Messages are stored in MongoDB so the team can review
-        them from the shop side.
+        book-club notes. Messages can be forwarded to the shop inbox and stored
+        in MongoDB for review.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 grid gap-4">
