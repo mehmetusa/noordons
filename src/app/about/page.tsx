@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 
 import { SectionHeading } from "@/components/section-heading";
 import { SocialLinks } from "@/components/social-links";
-import { serviceHighlights, storeStats } from "@/data/sample-books";
+import { serviceHighlights } from "@/data/sample-books";
+import { getBooks } from "@/lib/books";
 import { siteConfig } from "@/lib/site-config";
+import { buildStoreStats } from "@/lib/store-stats";
 
 const editorialPrinciples = [
   {
@@ -26,7 +28,11 @@ export const metadata: Metadata = {
     "Learn how Noordons Books combines editorial curation, premium presentation, and operational storefront tooling.",
 };
 
-export default function AboutPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AboutPage() {
+  const storeStats = buildStoreStats(await getBooks());
+
   return (
     <main className="page-frame space-y-8">
       <section className="section-panel px-6 py-8 sm:px-8">

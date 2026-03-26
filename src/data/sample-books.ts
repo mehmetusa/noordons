@@ -278,9 +278,9 @@ export const featuredShelves: ShelfFeature[] = [
 
 export const storeStats: StoreStat[] = [
   {
-    value: "08",
-    label: "signature titles",
-    copy: "A starter catalog designed for fiction, essays, history, poetry, and romance.",
+    value: "Live",
+    label: "catalog sync",
+    copy: "Store stats are derived from the current inventory instead of a fixed starter count.",
   },
   {
     value: "48h",

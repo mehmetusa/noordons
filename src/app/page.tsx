@@ -3,13 +3,10 @@ import Link from "next/link";
 import { BookCard } from "@/components/book-card";
 import { BookCover } from "@/components/book-cover";
 import { SectionHeading } from "@/components/section-heading";
-import {
-  featuredShelves,
-  serviceHighlights,
-  storeStats,
-} from "@/data/sample-books";
+import { featuredShelves, serviceHighlights } from "@/data/sample-books";
 import { getBooks } from "@/lib/books";
 import { formatCompactNumber, formatCurrency } from "@/lib/format";
+import { buildStoreStats } from "@/lib/store-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +15,7 @@ export default async function Home() {
   const featuredBooks = allBooks.filter((book) => book.featured).slice(0, 4);
   const latestBooks = allBooks.slice(0, 6);
   const spotlightBook = featuredBooks[0] ?? latestBooks[0];
-  const genreCount = new Set(allBooks.map((book) => book.genre).filter(Boolean)).size;
-  const dynamicStoreStats = [
-    {
-      value: new Intl.NumberFormat("en-US").format(allBooks.length),
-      label: allBooks.length === 1 ? "catalog title" : "catalog titles",
-      copy: `A live catalog spanning ${genreCount} genre${genreCount === 1 ? "" : "s"} and updating with your current inventory.`,
-    },
-    ...storeStats.slice(1),
-  ];
+  const dynamicStoreStats = buildStoreStats(allBooks);
 
   return (
     <main className="page-frame space-y-10">
