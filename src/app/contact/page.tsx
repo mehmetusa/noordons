@@ -21,7 +21,7 @@ export default async function ContactPage() {
         <SectionHeading
           eyebrow="Contact"
           title="Talk to the shop."
-          description="Reach out for order support, press notes, wholesale requests, reading-group questions, or event ideas. The contact form can forward messages to the shop inbox and archive them in MongoDB."
+          description="Reach out for order support, press notes, wholesale requests, reading-group questions, or event ideas. The contact form sends directly to the shop inbox and can also archive submissions in MongoDB."
           actionHref="/about"
           actionLabel="Read our story"
         />

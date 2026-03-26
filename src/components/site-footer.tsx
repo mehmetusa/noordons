@@ -28,7 +28,7 @@ export function SiteFooter() {
               alt={siteConfig.name}
               width={420}
               height={420}
-              className="h-40 w-40 object-contain"
+              className="h-40 w-40 rounded-[1.6rem] border border-[#d8c6b5]/65 bg-[#f7efe4] p-3 object-contain shadow-[0_20px_45px_rgba(0,0,0,0.18)]"
             />
           </div>
           <h2 className="max-w-sm font-serif text-4xl leading-none text-white">

@@ -34,9 +34,7 @@ cp .env.example .env.local
 - `NEXT_PUBLIC_SITE_URL` for canonical and social-share URLs
 - `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` for the client-facing cloud name
 - `CLOUDINARY_URL` for signed server-side cover uploads from the admin dashboard
-- `CONTACT_TO_EMAIL` for the inbox that should receive contact form messages
-- `CONTACT_FROM_EMAIL` for the sender address used by the contact form
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, and `SMTP_PASSWORD` for SMTP delivery from the contact form
+- `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` if you want to override the default Web3Forms public access key used by the contact form
 
 4. Start the app:
 
@@ -67,7 +65,7 @@ Copy the `whsec_...` signing secret printed by the Stripe CLI into
 - `/about` brand and storefront story page
 - `/cart` client-side cart with quantity controls
 - `/contact` contact page with MongoDB-backed message form
-- `/contact` contact page with SMTP delivery to the shop inbox and optional MongoDB archiving
+- `/contact` contact page with Web3Forms inbox delivery and optional MongoDB archiving
 - `/login` sign-in page
 - `/register` sign-up page
 - `/dashboard` authenticated user dashboard
@@ -104,7 +102,7 @@ and upserts them into the `books` collection by ISBN.
 - Once MongoDB is configured and seeded, pages and API routes read from the database.
 - The admin dashboard includes a live product form and inventory table. Cover uploads are sent to Cloudinary and the returned hosted image URL is saved in MongoDB.
 - The site now includes About and Contact pages, shared social links, social card metadata, and share actions on book detail pages.
-- The contact form can email `CONTACT_TO_EMAIL` over SMTP and also archive the message in MongoDB when configured.
+- The contact form sends through Web3Forms in the browser and can also archive the message in MongoDB when configured.
 - `STRIPE_SECRET_KEY` is required before the checkout button can create a hosted Stripe session.
 - `STRIPE_WEBHOOK_SECRET` is required if you want completed Stripe sessions written back into MongoDB as `Order` documents.
 - `AUTH_SECRET` should be a long random string in real deployments.

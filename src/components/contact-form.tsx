@@ -2,6 +2,8 @@
 
 import { type FormEvent, useState, useTransition } from "react";
 
+import { web3FormsAccessKey, web3FormsEndpoint } from "@/lib/web3forms";
+
 type ContactFormProps = {
   initialName?: string;
   initialEmail?: string;
@@ -10,6 +12,14 @@ type ContactFormProps = {
 type ContactFormState = {
   error: string | null;
   success: string | null;
+};
+
+type Web3FormsResponse = {
+  success?: boolean;
+  message?: string;
+  body?: {
+    message?: string;
+  };
 };
 
 export function ContactForm({
@@ -26,30 +36,49 @@ export function ContactForm({
     event.preventDefault();
 
     const form = event.currentTarget;
-    const payload = Object.fromEntries(new FormData(form).entries());
+    const formData = new FormData(form);
+    const archivePayload = Object.fromEntries(formData.entries());
 
     startTransition(async () => {
       setState({ error: null, success: null });
 
       try {
-        const response = await fetch("/api/contact", {
+        formData.set("access_key", web3FormsAccessKey);
+        formData.set("from_name", "Noordons Books");
+        formData.set("replyto", String(formData.get("email") || ""));
+
+        const response = await fetch(web3FormsEndpoint, {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = (await response.json()) as Web3FormsResponse;
+
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.message ||
+              result.body?.message ||
+              "Unable to send your message.",
+          );
+        }
+
+        void fetch("/api/contact", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(archivePayload),
+        }).catch((error) => {
+          console.error("Failed to archive contact message locally.", error);
         });
-
-        const result = (await response.json()) as { message?: string };
-
-        if (!response.ok) {
-          throw new Error(result.message || "Unable to send your message.");
-        }
 
         form.reset();
         setState({
           error: null,
-          success: result.message || "Your message has been sent.",
+          success:
+            result.message ||
+            result.body?.message ||
+            "Your message has been sent to the shop.",
         });
       } catch (error) {
         setState({
@@ -69,11 +98,18 @@ export function ContactForm({
       </h2>
       <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5d493d]">
         Use this form for order questions, wholesale requests, author events, or
-        book-club notes. Messages can be forwarded to the shop inbox and stored
-        in MongoDB for review.
+        book-club notes. Messages go straight to the shop inbox through
+        Web3Forms and can also be archived in MongoDB for review.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 grid gap-4">
+        <input
+          type="checkbox"
+          name="botcheck"
+          className="hidden"
+          tabIndex={-1}
+          autoComplete="off"
+        />
         <div className="grid gap-4 md:grid-cols-2">
           <input
             type="text"
