@@ -28,6 +28,7 @@ cp .env.example .env.local
 3. Configure auth and bootstrap admin credentials in `.env.local`:
 
 - `AUTH_SECRET` for signing session cookies
+- `MONGODB_BOOKS_COLLECTION` if your live catalog should be read from a collection other than the default `books`
 - `ADMIN_EMAIL` for the admin login
 - `ADMIN_PASSWORD` for the admin password
 - `ADMIN_NAME` for the admin display name
@@ -100,6 +101,7 @@ and upserts them into the `books` collection by ISBN.
 
 - If `MONGODB_URI` is not set, the UI falls back to the bundled sample catalog so the app still renders locally.
 - Once MongoDB is configured and seeded, pages and API routes read from the database.
+- If `MONGODB_BOOKS_COLLECTION` points at `products`, the storefront reads ISBN-backed records from that remote collection in read-only mode and disables catalog mutations in the admin UI.
 - The admin dashboard includes a live product form and inventory table. Cover uploads are sent to Cloudinary and the returned hosted image URL is saved in MongoDB.
 - The site now includes About and Contact pages, shared social links, social card metadata, and share actions on book detail pages.
 - The contact form sends through Web3Forms in the browser and can also archive the message in MongoDB when configured.

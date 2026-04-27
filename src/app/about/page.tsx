@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { SectionHeading } from "@/components/section-heading";
 import { SocialLinks } from "@/components/social-links";
 import { serviceHighlights } from "@/data/sample-books";
-import { getBooks } from "@/lib/books";
+import { getCatalogStats } from "@/lib/books";
 import { siteConfig } from "@/lib/site-config";
 import { buildStoreStats } from "@/lib/store-stats";
 
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AboutPage() {
-  const storeStats = buildStoreStats(await getBooks());
+  const storeStats = buildStoreStats(await getCatalogStats());
 
   return (
     <main className="page-frame space-y-8">

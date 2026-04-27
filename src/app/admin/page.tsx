@@ -6,7 +6,12 @@ import { InventoryTable } from "@/components/inventory-table";
 import { OrderList } from "@/components/order-list";
 import { SectionHeading } from "@/components/section-heading";
 import { requireAdminUser } from "@/lib/auth";
-import { getInventoryBooks } from "@/lib/books";
+import {
+  getBookCount,
+  getInventoryBooks,
+  isMongoCatalogReadOnly,
+  mongoBooksCollectionName,
+} from "@/lib/books";
 import { formatCompactNumber, formatCurrencyFromCents } from "@/lib/format";
 import { getAdminDashboardData } from "@/lib/orders";
 
@@ -19,10 +24,14 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   const currentUser = await requireAdminUser("/admin");
-  const [dashboard, inventoryBooks] = await Promise.all([
+  const [dashboard, inventoryBooks, totalCatalogTitles] = await Promise.all([
     getAdminDashboardData(),
     getInventoryBooks(),
+    getBookCount(),
   ]);
+  const inventoryPreviewBooks = isMongoCatalogReadOnly
+    ? inventoryBooks.slice(0, 250)
+    : inventoryBooks;
   const inStockTitles = inventoryBooks.filter((book) => book.inventory > 0).length;
   const outOfStockTitles = inventoryBooks.filter(
     (book) => book.inventory <= 0,
@@ -61,6 +70,19 @@ export default async function AdminDashboardPage() {
             <p className="text-sm leading-7 text-[#7f463f]">
               The admin analytics store could not be reached. Check the MongoDB
               connection string and webhook persistence flow.
+            </p>
+          </div>
+        ) : null}
+
+        {isMongoCatalogReadOnly ? (
+          <div className="mt-6 rounded-[1.5rem] border border-[#8b6d5a]/20 bg-[#fff8f1] p-5">
+            <p className="text-sm leading-7 text-[#6b4f3d]">
+              The catalog is currently reading from the remote
+              {" "}
+              <strong>{mongoBooksCollectionName}</strong>
+              {" "}
+              collection in read-only mode. Create, edit, and delete controls are
+              disabled so the source Atlas records are not modified or removed.
             </p>
           </div>
         ) : null}
@@ -109,7 +131,7 @@ export default async function AdminDashboardPage() {
         <div className="stat-card">
           <p className="section-kicker">Catalog titles</p>
           <p className="mt-4 font-serif text-5xl leading-none text-[#1b140f]">
-            {formatCompactNumber(inventoryBooks.length)}
+            {formatCompactNumber(totalCatalogTitles)}
           </p>
           <p className="mt-4 text-sm leading-7 text-[#5d493d]">
             Books currently stored in the live catalog collection.
@@ -144,9 +166,13 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
-      <AdminBookForm />
+      {isMongoCatalogReadOnly ? null : <AdminBookForm />}
 
-      <InventoryTable books={inventoryBooks} />
+      <InventoryTable
+        books={inventoryPreviewBooks}
+        totalCount={totalCatalogTitles}
+        readOnly={isMongoCatalogReadOnly}
+      />
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="section-panel px-6 py-6 sm:px-7">

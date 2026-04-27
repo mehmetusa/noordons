@@ -12,6 +12,8 @@ import type { Book } from "@/types/book";
 type InventoryTableProps = {
   books: Book[];
   pageSize?: number;
+  totalCount?: number;
+  readOnly?: boolean;
 };
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -47,6 +49,8 @@ function getVisiblePages(currentPage: number, pageCount: number) {
 export function InventoryTable({
   books,
   pageSize = DEFAULT_PAGE_SIZE,
+  totalCount,
+  readOnly = false,
 }: InventoryTableProps) {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,6 +67,7 @@ export function InventoryTable({
   const visiblePages = getVisiblePages(safePage, pageCount);
   const rangeStart = books.length ? pageStartIndex + 1 : 0;
   const rangeEnd = pageStartIndex + pageBooks.length;
+  const totalTitles = totalCount ?? books.length;
 
   async function handleDelete(book: Book) {
     if (
@@ -115,7 +120,8 @@ export function InventoryTable({
         </h2>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-[#5d493d]">
           <p>
-            Showing {rangeStart}-{rangeEnd} of {books.length} titles.
+            Showing {rangeStart}-{rangeEnd} of {totalTitles} titles.
+            {totalTitles > books.length ? ` Previewing ${books.length} loaded records.` : ""}
           </p>
           {books.length > pageSize ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -186,103 +192,110 @@ export function InventoryTable({
               <th className="px-6 py-4">Stock</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4">Featured</th>
-              <th className="px-6 py-4">Actions</th>
+              {!readOnly ? <th className="px-6 py-4">Actions</th> : null}
             </tr>
           </thead>
           <tbody>
-            {pageBooks.length ? pageBooks.map((book) => {
-              const stock = getStockLabel(book.inventory);
-              const isEditing = editingSlug === book.slug;
+            {pageBooks.length ? (
+              pageBooks.map((book) => {
+                const stock = getStockLabel(book.inventory);
+                const isEditing = editingSlug === book.slug;
 
-              return (
-                <Fragment key={book.slug}>
-                  <tr key={book.slug} className="border-b border-black/8">
-                    <td className="px-6 py-4">
-                      <div className="flex min-w-[280px] items-center gap-4">
-                        <BookCover
-                          title={book.title}
-                          author={book.author}
-                          palette={book.palette}
-                          imageUrl={book.imageUrl}
-                          badge={book.badge}
-                          className="h-28 w-20 shrink-0 rounded-[1rem]"
-                        />
-                        <div>
-                          <p className="font-serif text-2xl leading-none text-[#1b140f]">
-                            {book.title}
-                          </p>
-                          <p className="mt-2 text-sm text-[#5d493d]">
-                            {book.author}
-                          </p>
-                          <p className="mt-1 text-sm text-[#8b6d5a]">
-                            {book.genre} / {book.format}
-                          </p>
+                return (
+                  <Fragment key={book.slug}>
+                    <tr className="border-b border-black/8">
+                      <td className="px-6 py-4">
+                        <div className="flex min-w-[280px] items-center gap-4">
+                          <BookCover
+                            title={book.title}
+                            author={book.author}
+                            palette={book.palette}
+                            imageUrl={book.imageUrl}
+                            badge={book.badge}
+                            className="h-28 w-20 shrink-0 rounded-[1rem]"
+                          />
+                          <div>
+                            <p className="font-serif text-2xl leading-none text-[#1b140f]">
+                              {book.title}
+                            </p>
+                            <p className="mt-2 text-sm text-[#5d493d]">
+                              {book.author}
+                            </p>
+                            <p className="mt-1 text-sm text-[#8b6d5a]">
+                              {book.genre} / {book.format}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#5d493d]">
-                      <Link href={`/books/${book.slug}`} className="nav-link">
-                        {book.slug}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#1b140f]">
-                      {formatCurrency(book.price)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#1b140f]">
-                      {book.inventory}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={stock.className}>{stock.label}</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#5d493d]">
-                      {book.featured ? "Yes" : "No"}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() =>
-                            setEditingSlug((current) =>
-                              current === book.slug ? null : book.slug,
-                            )
-                          }
-                        >
-                          {isEditing ? "Close" : "Edit"}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary !border-[#b36c61]/40 !text-[#8f443f]"
-                          onClick={() => handleDelete(book)}
-                          disabled={pendingDeleteSlug === book.slug}
-                        >
-                          {pendingDeleteSlug === book.slug ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  {isEditing ? (
-                    <tr className="border-b border-black/8 last:border-b-0">
-                      <td colSpan={7} className="px-6 py-5">
-                        <AdminBookEditForm
-                          book={book}
-                          onCancel={() => setEditingSlug(null)}
-                          onSaved={(message) => {
-                            setEditingSlug(null);
-                            setFeedback({
-                              type: "success",
-                              message,
-                            });
-                          }}
-                        />
                       </td>
+                      <td className="px-6 py-4 text-sm text-[#5d493d]">
+                        <Link href={`/books/${book.slug}`} className="nav-link">
+                          {book.slug}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#1b140f]">
+                        {formatCurrency(book.price)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#1b140f]">
+                        {book.inventory}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={stock.className}>{stock.label}</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#5d493d]">
+                        {book.featured ? "Yes" : "No"}
+                      </td>
+                      {!readOnly ? (
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              onClick={() =>
+                                setEditingSlug((current) =>
+                                  current === book.slug ? null : book.slug,
+                                )
+                              }
+                            >
+                              {isEditing ? "Close" : "Edit"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-secondary !border-[#b36c61]/40 !text-[#8f443f]"
+                              onClick={() => handleDelete(book)}
+                              disabled={pendingDeleteSlug === book.slug}
+                            >
+                              {pendingDeleteSlug === book.slug ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
+                        </td>
+                      ) : null}
                     </tr>
-                  ) : null}
-                </Fragment>
-              );
-            }) : (
+                    {isEditing && !readOnly ? (
+                      <tr className="border-b border-black/8 last:border-b-0">
+                        <td colSpan={7} className="px-6 py-5">
+                          <AdminBookEditForm
+                            book={book}
+                            onCancel={() => setEditingSlug(null)}
+                            onSaved={(message) => {
+                              setEditingSlug(null);
+                              setFeedback({
+                                type: "success",
+                                message,
+                              });
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
+                );
+              })
+            ) : (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-sm leading-7 text-[#5d493d]">
+                <td
+                  colSpan={readOnly ? 6 : 7}
+                  className="px-6 py-8 text-sm leading-7 text-[#5d493d]"
+                >
                   No products are in the database yet. Use the form above to add the
                   first book with its cover image and inventory count.
                 </td>

@@ -3,6 +3,42 @@ import { dbConnect, isMongoConfigured } from "@/lib/mongodb";
 import { BookModel, type BookDocument } from "@/models/Book";
 import type { Book, BookFilters, CreateBookInput } from "@/types/book";
 
+const MONGODB_BOOKS_COLLECTION =
+  process.env.MONGODB_BOOKS_COLLECTION?.trim() || "books";
+const DEFAULT_IMPORTED_PRICE = 19.99;
+const DEFAULT_IMPORTED_INVENTORY = 4;
+const DEFAULT_IMPORTED_PAGES = 320;
+const DEFAULT_IMPORTED_YEAR = new Date().getFullYear();
+
+export const mongoBooksCollectionName = MONGODB_BOOKS_COLLECTION;
+export const isMongoCatalogReadOnly = MONGODB_BOOKS_COLLECTION !== "books";
+
+export type CatalogStats = {
+  titleCount: number;
+  genreCount: number;
+};
+
+type AtlasProductDocument = {
+  _id?: unknown;
+  title?: string;
+  brand?: string;
+  imageUrl?: string;
+  isbn?: string;
+  isbn13?: string;
+  asin?: string;
+  targetCategoryName?: string;
+  targetSellPrice?: number;
+  sourceBuyPrice?: number;
+  targetMarket?: string;
+  sourceMarket?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  marketStats?: {
+    rating?: number;
+    reviewCount?: number;
+  };
+};
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -81,7 +117,8 @@ function sortBooks(books: Book[]) {
     return (
       Number(right.featured) - Number(left.featured) ||
       right.reviewCount - left.reviewCount ||
-      right.publishedYear - left.publishedYear
+      right.publishedYear - left.publishedYear ||
+      left.title.localeCompare(right.title)
     );
   });
 }
@@ -128,12 +165,263 @@ function filterLocalBooks(books: Book[], filters: BookFilters) {
   return sorted.slice(0, filters.limit);
 }
 
+function usesAtlasProductsCollection() {
+  return MONGODB_BOOKS_COLLECTION === "products";
+}
+
+function extractExternalIdentifier(document: AtlasProductDocument) {
+  return (
+    document.isbn?.trim() ||
+    document.isbn13?.trim() ||
+    document.asin?.trim() ||
+    String(document._id ?? "")
+  );
+}
+
+function buildExternalSlug(document: AtlasProductDocument) {
+  const identifier = extractExternalIdentifier(document);
+  const titleSeed = document.title?.trim() || identifier || "untitled-book";
+  return `${slugify(titleSeed)}--${slugify(identifier)}`;
+}
+
+function readImportedYear(document: AtlasProductDocument) {
+  for (const value of [document.updatedAt, document.createdAt]) {
+    if (!value) {
+      continue;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.getFullYear();
+    }
+  }
+
+  return DEFAULT_IMPORTED_YEAR;
+}
+
+function readImportedFormat(title: string) {
+  const normalizedTitle = title.toLowerCase();
+
+  if (normalizedTitle.includes("hardcover") || normalizedTitle.includes("hardback")) {
+    return "Hardcover";
+  }
+
+  if (normalizedTitle.includes("paperback") || normalizedTitle.includes("softcover")) {
+    return "Paperback";
+  }
+
+  if (normalizedTitle.includes("board book")) {
+    return "Board Book";
+  }
+
+  if (normalizedTitle.includes("spiral")) {
+    return "Spiral-bound";
+  }
+
+  if (normalizedTitle.includes("kindle") || normalizedTitle.includes("ebook")) {
+    return "eBook";
+  }
+
+  return "Paperback";
+}
+
+function readImportedPrice(document: AtlasProductDocument) {
+  if (
+    typeof document.targetSellPrice === "number" &&
+    Number.isFinite(document.targetSellPrice) &&
+    document.targetSellPrice > 0
+  ) {
+    return Math.round(document.targetSellPrice * 100) / 100;
+  }
+
+  if (
+    typeof document.sourceBuyPrice === "number" &&
+    Number.isFinite(document.sourceBuyPrice) &&
+    document.sourceBuyPrice > 0
+  ) {
+    return Math.round(Math.max(document.sourceBuyPrice * 2, 7.99) * 100) / 100;
+  }
+
+  return DEFAULT_IMPORTED_PRICE;
+}
+
+function readImportedRating(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+
+  if (value > 5) {
+    return Math.max(0, Math.min(5, value / 10));
+  }
+
+  return Math.max(0, Math.min(5, value));
+}
+
+function readImportedReviewCount(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+
+  // Some upstream records carry obviously inflated review totals.
+  if (value > 500_000) {
+    return 0;
+  }
+
+  return Math.round(value);
+}
+
+function normalizeAtlasProduct(document: AtlasProductDocument): Book {
+  const identifier = extractExternalIdentifier(document);
+  const title = document.title?.trim() || `ISBN ${identifier}`;
+  const genre = document.targetCategoryName?.trim() || "Books";
+  const reviewCount = readImportedReviewCount(document.marketStats?.reviewCount);
+  const rating = readImportedRating(document.marketStats?.rating);
+  const price = readImportedPrice(document);
+  const format = readImportedFormat(title);
+  const imageUrl = document.imageUrl?.trim() || undefined;
+  const isbn = document.isbn?.trim() || document.isbn13?.trim() || identifier;
+  const author = document.brand?.trim() || "Unknown author";
+  const featured = Boolean(imageUrl && (reviewCount >= 25 || rating >= 4.5));
+
+  return {
+    title,
+    slug: buildExternalSlug(document),
+    author,
+    genre,
+    format,
+    language: "English",
+    imageUrl,
+    price,
+    compareAtPrice: undefined,
+    rating,
+    reviewCount,
+    featured,
+    badge: featured ? "Imported" : undefined,
+    inventory: DEFAULT_IMPORTED_INVENTORY,
+    pages: DEFAULT_IMPORTED_PAGES,
+    publishedYear: readImportedYear(document),
+    isbn,
+    palette: ["#60453b", "#deaf91"],
+    description: `${title} is currently listed in the ${genre.toLowerCase()} shelf with imported catalog data and live ISBN mapping.`,
+    longDescription: [
+      `${title} is part of the connected Noordons catalog and is already live for browsing, pricing, and ISBN-based lookup.`,
+      "Some extended metadata for this title may still be filling in from the connected source feed, but the storefront record is ready to browse and purchase.",
+    ],
+    highlights: [
+      "Imported from connected catalog",
+      `ISBN ${isbn}`,
+      imageUrl ? "Cover image available" : "Cover image pending",
+    ],
+    tags: [genre, document.targetMarket, document.sourceMarket].filter(
+      (value): value is string => Boolean(value?.trim()),
+    ),
+  };
+}
+
+function buildAtlasProductsFilter(filters: BookFilters) {
+  const query: Record<string, unknown> = {
+    isbn: { $type: "string", $ne: "" },
+  };
+
+  if (filters.genre && filters.genre !== "All") {
+    query.targetCategoryName = filters.genre;
+  }
+
+  if (filters.featured) {
+    query.imageUrl = { $type: "string", $ne: "" };
+    query["marketStats.reviewCount"] = { $gte: 25 };
+  }
+
+  if (filters.query) {
+    const regex = new RegExp(escapeRegExp(filters.query), "i");
+    query.$or = [
+      { title: regex },
+      { brand: regex },
+      { targetCategoryName: regex },
+      { isbn: regex },
+      { isbn13: regex },
+    ];
+  }
+
+  return query;
+}
+
+async function readAtlasProductDocuments(
+  filters: BookFilters,
+  options?: { sortByTitle?: boolean; limit?: number },
+) {
+  const connection = await dbConnect();
+  const db = connection?.connection.db;
+
+  if (!db) {
+    return null;
+  }
+
+  const collection = db.collection(MONGODB_BOOKS_COLLECTION);
+  const limit =
+    options?.limit ?? (filters.limit ? filters.limit + (filters.excludeSlug ? 1 : 0) : 0);
+
+  let cursor = collection.find(buildAtlasProductsFilter(filters), {
+    projection: {
+      title: 1,
+      brand: 1,
+      imageUrl: 1,
+      isbn: 1,
+      isbn13: 1,
+      asin: 1,
+      targetCategoryName: 1,
+      targetSellPrice: 1,
+      sourceBuyPrice: 1,
+      targetMarket: 1,
+      sourceMarket: 1,
+      createdAt: 1,
+      updatedAt: 1,
+      marketStats: 1,
+    },
+  });
+
+  cursor = options?.sortByTitle
+    ? cursor.sort({ title: 1 })
+    : cursor.sort({
+        "marketStats.reviewCount": -1,
+        "marketStats.rating": -1,
+        title: 1,
+      });
+
+  if (limit > 0) {
+    cursor = cursor.limit(limit);
+  }
+
+  const documents = await cursor.toArray();
+  return documents as AtlasProductDocument[];
+}
+
 async function readBooksFromMongo(filters: BookFilters) {
   if (!isMongoConfigured) {
     return null;
   }
 
   try {
+    if (usesAtlasProductsCollection()) {
+      const documents = await readAtlasProductDocuments(filters);
+      if (!documents) {
+        return null;
+      }
+
+      const books = sortBooks(
+        documents.map((document) => normalizeAtlasProduct(document)),
+      );
+      const filteredBooks = filters.excludeSlug
+        ? books.filter((book) => book.slug !== filters.excludeSlug)
+        : books;
+
+      if (!filteredBooks.length) {
+        return null;
+      }
+
+      return filters.limit ? filteredBooks.slice(0, filters.limit) : filteredBooks;
+    }
+
     await dbConnect();
 
     const total = await BookModel.estimatedDocumentCount();
@@ -184,12 +472,59 @@ async function readBooksFromMongo(filters: BookFilters) {
   }
 }
 
+function parseExternalIdentifierFromSlug(slug: string) {
+  const [, identifier] = slug.split("--");
+  return identifier?.trim() ? identifier.trim().toLowerCase() : null;
+}
+
 async function readBookFromMongo(slug: string) {
   if (!isMongoConfigured) {
     return null;
   }
 
   try {
+    if (usesAtlasProductsCollection()) {
+      const connection = await dbConnect();
+      const db = connection?.connection.db;
+      const identifier = parseExternalIdentifierFromSlug(slug);
+
+      if (!db || !identifier) {
+        return null;
+      }
+
+      const document = (await db.collection(MONGODB_BOOKS_COLLECTION).findOne(
+        {
+          isbn: { $type: "string", $ne: "" },
+          $or: [
+            { isbn: identifier },
+            { isbn13: identifier },
+            { asin: identifier.toUpperCase() },
+            { asin: identifier },
+          ],
+        },
+        {
+          projection: {
+            title: 1,
+            brand: 1,
+            imageUrl: 1,
+            isbn: 1,
+            isbn13: 1,
+            asin: 1,
+            targetCategoryName: 1,
+            targetSellPrice: 1,
+            sourceBuyPrice: 1,
+            targetMarket: 1,
+            sourceMarket: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            marketStats: 1,
+          },
+        },
+      )) as AtlasProductDocument | null;
+
+      return document ? normalizeAtlasProduct(document) : undefined;
+    }
+
     await dbConnect();
 
     const total = await BookModel.estimatedDocumentCount();
@@ -223,14 +558,85 @@ export async function getBookBySlug(slug: string) {
   return sampleBooks.find((book) => book.slug === slug) ?? null;
 }
 
+export async function getBookCount(filters: BookFilters = {}) {
+  if (isMongoConfigured) {
+    try {
+      if (usesAtlasProductsCollection()) {
+        const connection = await dbConnect();
+        const db = connection?.connection.db;
+
+        if (db) {
+          return db
+            .collection(MONGODB_BOOKS_COLLECTION)
+            .countDocuments(buildAtlasProductsFilter(filters));
+        }
+      } else {
+        await dbConnect();
+
+        const query: Record<string, unknown> = {};
+
+        if (filters.genre && filters.genre !== "All") {
+          query.genre = filters.genre;
+        }
+
+        if (filters.featured) {
+          query.featured = true;
+        }
+
+        if (filters.query) {
+          const regex = new RegExp(escapeRegExp(filters.query), "i");
+          query.$or = [
+            { title: regex },
+            { author: regex },
+            { genre: regex },
+            { format: regex },
+            { tags: regex },
+          ];
+        }
+
+        return BookModel.countDocuments(query);
+      }
+    } catch (error) {
+      console.error("Failed to count books from MongoDB.", error);
+    }
+  }
+
+  return filterLocalBooks(sampleBooks, filters).length;
+}
+
+export async function getCatalogStats(): Promise<CatalogStats> {
+  const [titleCount, genres] = await Promise.all([getBookCount(), getGenres()]);
+  return {
+    titleCount,
+    genreCount: genres.length,
+  };
+}
+
 export async function getGenres() {
   if (isMongoConfigured) {
     try {
-      await dbConnect();
+      if (usesAtlasProductsCollection()) {
+        const connection = await dbConnect();
+        const db = connection?.connection.db;
 
-      const total = await BookModel.estimatedDocumentCount();
-      if (total > 0) {
-        return BookModel.distinct("genre");
+        if (db) {
+          const genres = await db.collection(MONGODB_BOOKS_COLLECTION).distinct(
+            "targetCategoryName",
+            {
+              isbn: { $type: "string", $ne: "" },
+              targetCategoryName: { $type: "string", $ne: "" },
+            },
+          );
+
+          return genres.filter(Boolean).sort();
+        }
+      } else {
+        await dbConnect();
+
+        const total = await BookModel.estimatedDocumentCount();
+        if (total > 0) {
+          return BookModel.distinct("genre");
+        }
       }
     } catch (error) {
       console.error("Failed to read genres from MongoDB.", error);
@@ -240,24 +646,52 @@ export async function getGenres() {
   return Array.from(new Set(sampleBooks.map((book) => book.genre))).sort();
 }
 
-export async function getInventoryBooks() {
+export async function getInventoryBooks(limit?: number) {
   if (!isMongoConfigured) {
-    return [...sampleBooks].sort((left, right) => {
-      return left.inventory - right.inventory || left.title.localeCompare(right.title);
-    });
+    return [...sampleBooks]
+      .sort((left, right) => {
+        return left.inventory - right.inventory || left.title.localeCompare(right.title);
+      })
+      .slice(0, limit);
   }
 
   try {
+    if (usesAtlasProductsCollection()) {
+      const documents = await readAtlasProductDocuments(
+        {},
+        { sortByTitle: true, limit: limit ?? 0 },
+      );
+
+      if (!documents) {
+        return [];
+      }
+
+      return documents.map((document) => normalizeAtlasProduct(document));
+    }
+
     await dbConnect();
 
-    const books = await BookModel.find({})
+    const cursor = BookModel.find({})
       .sort({ inventory: 1, title: 1 })
       .lean();
 
+    if (limit) {
+      cursor.limit(limit);
+    }
+
+    const books = await cursor;
     return books.map((book) => normalizeBook(book as BookDocument));
   } catch (error) {
     console.error("Failed to read inventory books from MongoDB.", error);
     return [];
+  }
+}
+
+function assertCatalogIsWritable() {
+  if (isMongoCatalogReadOnly) {
+    throw new Error(
+      `The connected MongoDB catalog source (${MONGODB_BOOKS_COLLECTION}) is configured as read-only.`,
+    );
   }
 }
 
@@ -266,6 +700,7 @@ export async function createBook(input: CreateBookInput) {
     throw new Error("MONGODB_URI is not configured.");
   }
 
+  assertCatalogIsWritable();
   await dbConnect();
 
   const title = input.title.trim();
@@ -298,6 +733,7 @@ export async function updateBookBySlug(
     throw new Error("MONGODB_URI is not configured.");
   }
 
+  assertCatalogIsWritable();
   await dbConnect();
 
   const existingBook = await BookModel.findOne({ slug: currentSlug }).lean();
@@ -322,12 +758,7 @@ export async function updateBookBySlug(
   }
 
   const payload = buildBookPayload(input, nextSlug);
-  const {
-    imageUrl,
-    compareAtPrice,
-    badge,
-    ...requiredPayload
-  } = payload;
+  const { imageUrl, compareAtPrice, badge, ...requiredPayload } = payload;
   const $set: Record<string, unknown> = { ...requiredPayload };
   const $unset: Record<string, 1> = {};
 
@@ -373,6 +804,7 @@ export async function deleteBookBySlug(slug: string) {
     throw new Error("MONGODB_URI is not configured.");
   }
 
+  assertCatalogIsWritable();
   await dbConnect();
 
   const deletedBook = await BookModel.findOneAndDelete({ slug }).lean();
@@ -389,6 +821,7 @@ export async function seedBooks() {
     throw new Error("MONGODB_URI is not configured.");
   }
 
+  assertCatalogIsWritable();
   await dbConnect();
 
   const existing = await BookModel.estimatedDocumentCount();

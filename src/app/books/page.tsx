@@ -2,7 +2,9 @@ import Link from "next/link";
 
 import { BookCard } from "@/components/book-card";
 import { SectionHeading } from "@/components/section-heading";
-import { getBooks, getGenres } from "@/lib/books";
+import { getBookCount, getBooks, getGenres } from "@/lib/books";
+
+const CATALOG_PREVIEW_LIMIT = 120;
 
 type BooksPageProps = {
   searchParams: Promise<{
@@ -16,8 +18,9 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
   const query = typeof params.q === "string" ? params.q.trim() : "";
   const genre = typeof params.genre === "string" ? params.genre : "All";
 
-  const [books, genres] = await Promise.all([
-    getBooks({ query, genre }),
+  const [books, totalCount, genres] = await Promise.all([
+    getBooks({ query, genre, limit: CATALOG_PREVIEW_LIMIT }),
+    getBookCount({ query, genre }),
     getGenres(),
   ]);
 
@@ -50,8 +53,11 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
             </div>
 
             <p className="text-sm leading-7 text-[#5d493d]">
-              {books.length} result{books.length === 1 ? "" : "s"} shown
+              {totalCount} result{totalCount === 1 ? "" : "s"} found
               {genre !== "All" ? ` in ${genre}` : ""}.
+              {totalCount > books.length
+                ? ` Showing the first ${books.length}.`
+                : " All matching titles are shown."}
             </p>
           </form>
 

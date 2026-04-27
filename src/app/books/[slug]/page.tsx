@@ -71,8 +71,12 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             <p className="mt-4 text-lg text-[#594539]">by {book.author}</p>
 
             <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#7e6455]">
-              <span className="pill">{book.rating.toFixed(1)} rating</span>
-              <span className="pill">{book.reviewCount} reviews</span>
+              <span className="pill">
+                {book.rating > 0 ? `${book.rating.toFixed(1)} rating` : "Unrated"}
+              </span>
+              <span className="pill">
+                {book.reviewCount > 0 ? `${book.reviewCount} reviews` : "New listing"}
+              </span>
               <span className="pill">{book.language}</span>
             </div>
 

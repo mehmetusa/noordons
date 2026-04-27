@@ -1,10 +1,11 @@
 import { storeStats as sampleStoreStats } from "@/data/sample-books";
-import type { Book, StoreStat } from "@/types/book";
+import type { StoreStat } from "@/types/book";
 
-export function buildStoreStats(books: Book[]): StoreStat[] {
-  const titleCount = books.length;
-  const genreCount = new Set(books.map((book) => book.genre).filter(Boolean)).size;
-
+export function buildStoreStats(input: {
+  titleCount: number;
+  genreCount: number;
+}): StoreStat[] {
+  const { titleCount, genreCount } = input;
   const catalogStat: StoreStat = {
     value: new Intl.NumberFormat("en-US").format(titleCount),
     label: titleCount === 1 ? "catalog title" : "catalog titles",

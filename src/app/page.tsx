@@ -4,18 +4,20 @@ import { BookCard } from "@/components/book-card";
 import { BookCover } from "@/components/book-cover";
 import { SectionHeading } from "@/components/section-heading";
 import { featuredShelves, serviceHighlights } from "@/data/sample-books";
-import { getBooks } from "@/lib/books";
+import { getBooks, getCatalogStats } from "@/lib/books";
 import { formatCompactNumber, formatCurrency } from "@/lib/format";
 import { buildStoreStats } from "@/lib/store-stats";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const allBooks = await getBooks();
-  const featuredBooks = allBooks.filter((book) => book.featured).slice(0, 4);
-  const latestBooks = allBooks.slice(0, 6);
+  const [catalogStats, featuredBooks, latestBooks] = await Promise.all([
+    getCatalogStats(),
+    getBooks({ featured: true, limit: 4 }),
+    getBooks({ limit: 6 }),
+  ]);
   const spotlightBook = featuredBooks[0] ?? latestBooks[0];
-  const dynamicStoreStats = buildStoreStats(allBooks);
+  const dynamicStoreStats = buildStoreStats(catalogStats);
 
   return (
     <main className="page-frame space-y-10">
@@ -72,7 +74,9 @@ export default async function Home() {
                   </h2>
                 </div>
                 <span className="rounded-full border border-white/10 px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#f2d8c3]">
-                  {formatCompactNumber(spotlightBook.reviewCount)} readers
+                  {spotlightBook.reviewCount > 0
+                    ? `${formatCompactNumber(spotlightBook.reviewCount)} readers`
+                    : "New listing"}
                 </span>
               </div>
 
@@ -175,7 +179,7 @@ export default async function Home() {
         />
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {latestBooks.slice(0, 6).map((book) => (
+          {latestBooks.map((book) => (
             <BookCard key={book.slug} book={book} />
           ))}
         </div>

@@ -38,8 +38,12 @@ export function BookCard({ book }: BookCardProps) {
 
         <div className="mt-auto flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#7e6455]">
           <span className="pill">{book.format}</span>
-          <span className="pill">{book.rating.toFixed(1)} rating</span>
-          <span className="pill">{book.reviewCount} reviews</span>
+          <span className="pill">
+            {book.rating > 0 ? `${book.rating.toFixed(1)} rating` : "Unrated"}
+          </span>
+          <span className="pill">
+            {book.reviewCount > 0 ? `${book.reviewCount} reviews` : "New listing"}
+          </span>
         </div>
       </Link>
     </article>
